@@ -1,82 +1,94 @@
 import * as THREE from 'three';
-import TrackballControls from 'three-trackballcontrols';
 import OrbitControls from 'three-orbitcontrols';
 
-let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-let renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+let renderWidth, renderHeight, scene, camera, renderer, controls, outerDome, innerDome;
 
-const renderer = new THREE.WebGLRenderer( {  } );
-renderer.setSize( renderWidth, renderHeight );
-renderer.shadowMap.enabled = true;
+init();
+animate();
 
-document.body.appendChild( renderer.domElement );
+function init() {
 
-const scene = new THREE.Scene();
+    renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+    renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
-// scene.background = new THREE.Color( 0xFFFFFF );
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x666666, 0);
 
-const camera = new THREE.PerspectiveCamera( 45, renderWidth / renderHeight, 1, 500 );
+    camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 2000);
 // const cameraHelper = new THREE.CameraHelper( camera );
 // scene.add( cameraHelper );
 
-// const controls = new TrackballControls( camera );
-// controls.rotateSpeed = 1.0;
-// controls.zoomSpeed = 1.2;
-// controls.panSpeed = 0.8;
-// controls.noZoom = false;
-// controls.noPan = false;
-// controls.staticMoving = true;
-// controls.dynamicDampingFactor = 0.3;
+    controls = new OrbitControls(camera);
 
-const controls = new OrbitControls( camera );
+    scene.add(new THREE.HemisphereLight(0x050505, 0xCCCCCC));
 
-scene.add( new THREE.HemisphereLight( 0x050505, 0xCCCCCC ) );
+    // const gridHelper = new THREE.GridHelper(10, 10);
+    // scene.add( gridHelper );
 
-const gridHelper = new THREE.GridHelper( 10, 10 );
-// scene.add( gridHelper );
+    // Dome
+    let outerDomeGeometry = new THREE.IcosahedronGeometry(400, 1);
+    let outerDomeMaterial = new THREE.MeshPhongMaterial({
+        color: 0x333333,
+        shading: THREE.FlatShading,
+        side: THREE.BackSide
+    });
+    outerDome = new THREE.Mesh(outerDomeGeometry, outerDomeMaterial);
+    scene.add(outerDome);
 
-const light = new THREE.DirectionalLight( 0xffffff );
-light.position.set( 1, 1, 0 );
-light.position.multiplyScalar( 10 );
-scene.add( light );
+    // lights
+	let light, light1, light2,
+        sphere = new THREE.SphereGeometry( 0.025, 16, 8 );
 
-light.castShadow = true;
-light.shadow.mapSize.width = 2048;
-light.shadow.mapSize.height = 2048;
+    light1 = new THREE.PointLight(0xfb3550, 1, 100, 1);
+    // light1.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xfb3550 } ) ) );
+    light1.position.set(1, 1, 1);
+    scene.add(light1);
 
-const lightHelper = new THREE.DirectionalLightHelper( light );
-// scene.add( lightHelper );
+    light2 = new THREE.PointLight(0x002288, 1, 100, 1);
+    // light2.add( new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0x002288 } ) ) );
+    light2.position.set(-1, -1, -1);
+    scene.add(light2);
 
-const cubeGeometry = new THREE.BoxGeometry( 1, 1, 1 );
-const cubeMaterial = new THREE.MeshPhongMaterial( { color: 0x1cff94 } );
+    light = new THREE.AmbientLight(0x7c6e87, 0.8);
+    scene.add(light);
 
-const cube = new THREE.Mesh( cubeGeometry, cubeMaterial );
-cube.position.x = 0;
-cube.position.y = 1;
-cube.position.z = 0;
-cube.castShadow = true;
-cube.receiveShadow = true;
-scene.add(cube);
 
-let groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
-let groundMat = new THREE.MeshPhongMaterial( { color: 0xCCCCCC } );
-let ground = new THREE.Mesh( groundGeo, groundMat );
-ground.rotation.x = -Math.PI/2;
-ground.position.y = 0;
-scene.add( ground );
-ground.receiveShadow = true;
 
-camera.position.z = 5;
+    let innerDomeGeometry = new THREE.IcosahedronGeometry(1, 1);
+    let innerDomeMaterial = new THREE.MeshPhongMaterial({
+        color: 0x333333,
+        shading: THREE.FlatShading,
+    });
+    innerDome = new THREE.Mesh(innerDomeGeometry, innerDomeMaterial);
+    scene.add(innerDome);
 
-const animate = function () {
+    camera.position.x = 0;
+    camera.position.y = 0;
+    camera.position.z = 5;
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(renderWidth, renderHeight);
+    // renderer.shadowMap.enabled = true;
+    renderer.setClearColor(scene.fog.color);
+
+    document.body.appendChild(renderer.domElement);
+
+}
+
+function animate() {
+
 	requestAnimationFrame( animate );
 
-	cube.rotation.x += 0.01;
-	cube.rotation.y += 0.01;
+	innerDome.rotation.x += 0.01;
+	// innerDome.rotation.y += 0.01;
 
 	controls.update();
 
-	renderer.render(scene, camera);
+	render();
 };
 
-animate();
+function render() {
+
+    renderer.render(scene, camera);
+
+}
