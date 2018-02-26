@@ -1,5 +1,7 @@
 //import loader from './projects/loader';
-import project2 from './projects/2';
+// import depthOfField from './projects/depth-of-field';
+import project3 from './projects/project3';
 
 //loader();
-project2();
+// depthOfField();
+project3();

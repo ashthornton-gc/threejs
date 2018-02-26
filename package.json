@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack --watch --progress --config 'webpack.dev.js'",
-    "build":"webpack --progress --config 'webpack.prod.js'"
+    "build": "webpack --progress --config 'webpack.prod.js'"
   },
   "author": "",
   "license": "ISC",
@@ -25,9 +25,12 @@
     "webpack-merge": "^4.1.0"
   },
   "dependencies": {
+    "dat.gui": "^0.7.1",
     "svg-mesh-3d": "^1.1.0",
     "three": "^0.90.0",
+    "three-addons": "^1.1.0",
     "three-canvas-renderer": "^2.0.0",
+    "three-effectcomposer-es6": "0.0.4",
     "three-orbitcontrols": "^2.0.0",
     "three-simplicial-complex": "^69.0.6",
     "three-trackballcontrols": "0.0.7"
