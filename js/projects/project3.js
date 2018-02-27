@@ -10,10 +10,8 @@ const project3 = function() {
         scene, camera, renderer, controls, plane, planeGeometry, planeMaterial,
         clock = new THREE.Clock(), timeElapsed;
 
-    var hash = document.location.hash.substr( 1 );
-    if ( hash ) hash = parseInt( hash, 0 );
     // Texture width for simulation
-    var WIDTH = hash || 128;
+    var WIDTH = 64;
     var NUM_TEXELS = WIDTH * WIDTH;
     // Water size in system units
     var BOUNDS = 512;
@@ -43,33 +41,35 @@ const project3 = function() {
         document.body.appendChild(renderer.domElement);
 
         camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 0.1, 1000);
-        camera.position.set(0,0,20);
+        camera.position.set(0,200,300);
         camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        scene.add( new THREE.AxesHelper(250) );
 
         controls = new OrbitControls( camera );
 
         initWater();
 
-        let light = new THREE.PointLight(0x5FD6E3, 0.8, 100, 0.5);
+        let light = new THREE.PointLight(0x5FD6E3, 0.8, 150, 0.5);
         light.castShadow = true;
-        light.position.set(12, 50, 23); // turq
+        light.position.set(-12, 100, 23); // turq
         scene.add( light );
 
-         scene.add( new THREE.PointLightHelper( light ) );
+        scene.add( new THREE.PointLightHelper( light ) );
 
-        light = new THREE.PointLight(0x7554D9, 0.8, 100, 0.5);
+        light = new THREE.PointLight(0xDBB1F0, 0.8, 150, 0.5);
         light.castShadow = true;
-        light.position.set(50, 50, 20); //pink
+        light.position.set(75, 100, 50); //pink
         scene.add( light );
 
-         scene.add( new THREE.PointLightHelper( light ) );
+        scene.add( new THREE.PointLightHelper( light ) );
 
-        light = new THREE.PointLight(0xDBB1F0, 0.8, 100, 0.5);
+        light = new THREE.PointLight(0x7554D9, 0.8, 150, 0.5);
         light.castShadow = true;
-        light.position.set(80, 50, 20); //purple
+        light.position.set(120, 100, 20); //purple
         scene.add( light );
 
-         scene.add( new THREE.PointLightHelper( light ) );
+        scene.add( new THREE.PointLightHelper( light ) );
 
         scene.add( new THREE.HemisphereLight(0xFFFFFF, 0x000000, 0.5));
 
@@ -107,7 +107,7 @@ const project3 = function() {
         material.defines.BOUNDS = BOUNDS.toFixed( 1 );
         waterUniforms = material.uniforms;
         waterMesh = new THREE.Mesh( geometry, material );
-        //waterMesh.material.wireframe = true;
+        // waterMesh.material.wireframe = true;
         waterMesh.rotation.x = - Math.PI / 2;
         waterMesh.matrixAutoUpdate = false;
         waterMesh.updateMatrix();
@@ -126,7 +126,7 @@ const project3 = function() {
         heightmapVariable = gpuCompute.addVariable( "heightmap", document.getElementById( 'heightmapFragmentShader' ).textContent, heightmap0 );
         gpuCompute.setVariableDependencies( heightmapVariable, [ heightmapVariable ] );
         heightmapVariable.material.uniforms.mousePos = { value: new THREE.Vector2( 10000, 10000 ) };
-        heightmapVariable.material.uniforms.mouseSize = { value: 50.0 };
+        heightmapVariable.material.uniforms.mouseSize = { value: 25.0 };
         heightmapVariable.material.uniforms.viscosityConstant = { value: 0.03 };
         heightmapVariable.material.defines.BOUNDS = BOUNDS.toFixed( 1 );
         var error = gpuCompute.init();
@@ -134,7 +134,7 @@ const project3 = function() {
             console.error( error );
         }
         // Create compute shader to smooth the water surface and velocity
-        smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: { value: null } } );
+        //smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: { value: null } } );
     }
     function fillTexture( texture ) {
         var waterMaxHeight = 10;
