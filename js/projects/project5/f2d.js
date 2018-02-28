@@ -6,21 +6,24 @@ var F2D = {};
     
 
     F2D.SlabopBase = function(fs, uniforms, grid) {
-        var geometry = new THREE.PlaneBufferGeometry(2 * (grid.size.x) / grid.size.x, 2 * (grid.size.y) / grid.size.y);
+        var geometry = new THREE.PlaneBufferGeometry(2 * (grid.size.x - 2) / grid.size.x, 2 * (grid.size.y - 2) / grid.size.y);
         var material = new THREE.ShaderMaterial({
             uniforms: uniforms,
             fragmentShader: fs,
-            depthWrite: false,
+            depthWrite: true,
             depthTest: false,
-            blending: THREE.NoBlending
+            // blending: THREE.NoBlending,
+            transparent: true
         });
         var quad = new THREE.Mesh(geometry, material);
 
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -5, 5);
         this.scene = new THREE.Scene();
         this.scene.add(quad);
 
-        this.scene.add( new THREE.DirectionalLightHelper( new THREE.DirectionalLight( 0x666666, 1 ) ) );
+        // this.scene.background = new THREE.Color(0, 1, 0);
+
+        // this.scene.add( new THREE.DirectionalLightHelper( new THREE.DirectionalLight( 0x666666, 1 ) ) );
 
     };
 
@@ -222,7 +225,7 @@ var F2D = {};
 
     F2D.Splat = function(fs, grid, radius) {
         this.grid = grid;
-        this.radius = radius === undefined ? 0.1 : radius;
+        this.radius = radius === undefined ? 0.5 : radius;
 
         this.uniforms = {
             read: {
@@ -412,7 +415,7 @@ var F2D = {};
         this.lineB = createLine([[-ax, -ay, 0], [ bx, -by, 0]]);
         this.lineT = createLine([[-ax,  ay, 0], [ bx,  by, 0]]);
 
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -5, 5);
         this.scene = new THREE.Scene();
 
         this.gridOffset = new THREE.Vector3();
@@ -475,7 +478,7 @@ var F2D = {};
         minFilter: THREE.NearestFilter,
         format: THREE.RGBAFormat,
         type: THREE.FloatType,
-        depthBuffer: false,
+        depthBuffer: true,
         stencilBuffer: false,
         generateMipmaps: false,
         shareDepthFrom: null
@@ -492,9 +495,10 @@ var F2D = {};
 (function(F2D) {
     
 
-    F2D.Display = function(vs, fs, bias, scale) {
+    F2D.Display = function(vs, fs, bias, scale, scale2) {
         this.bias = bias === undefined ? new THREE.Vector3(0, 0, 0) : bias;
         this.scale = scale === undefined ? new THREE.Vector3(1, 1, 1) : scale;
+        this.scale2 = scale2 === undefined ? new THREE.Vector3(0.5, 0.5, 0.5) : scale2;
 
         this.uniforms = {
             read: {
@@ -511,15 +515,43 @@ var F2D = {};
             uniforms: this.uniforms,
             vertexShader: vs,
             fragmentShader: fs,
-            depthWrite: false,
-            depthTest: false,
-            blending: THREE.NoBlending
+            depthWrite: true,
+            depthTest: true,
+            transparent: true,
+            // blending: THREE.NoBlending
         });
-        var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), this.material);
+        var quad = new THREE.Mesh(new THREE.PlaneBufferGeometry(1, 1), this.material);
 
-        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        this.uniforms2 = {
+            read: {
+                type: "t"
+            },
+            bias: {
+                type: "v3"
+            },
+            scale: {
+                type: "v3"
+            }
+        };
+        this.material2 = new THREE.ShaderMaterial({
+            uniforms: this.uniforms2,
+            vertexShader: vs,
+            fragmentShader: fs,
+            depthWrite: true,
+            depthTest: true,
+            transparent: true
+            // blending: THREE.NoBlending
+        });
+        var quad2 = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), this.material2);
+
+        this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -5, 5);
         this.scene = new THREE.Scene();
+        this.scene.add(quad2);
+        quad2.position.set(0, 0, -1);
         this.scene.add(quad);
+        quad.position.set(0, 0, 1);
+        // this.scene.background = new THREE.Color(0, 1, 0);
+
     };
 
     F2D.Display.prototype = {
@@ -533,10 +565,17 @@ var F2D = {};
         },
 
         render: function(renderer, read) {
+
             this.uniforms.read.value = read;
             this.uniforms.bias.value = this.bias;
             this.uniforms.scale.value = this.scale;
+
+            this.uniforms2.read.value = read;
+            this.uniforms2.bias.value = this.bias;
+            this.uniforms2.scale.value = this.scale2;
+
             renderer.render(this.scene, this.camera);
+            renderer.setClearColor(0xFFFFFF, 0);
         }
     };
 
@@ -566,6 +605,7 @@ var F2D = {};
         this.poissonPressureEq = slabop.poissonPressureEq;
         this.gradient = slabop.gradient;
         this.splat = slabop.splat;
+        this.splat2 = slabop.splat2;
         this.vorticity = slabop.vorticity;
         this.vorticityConfinement = slabop.vorticityConfinement;
         this.boundary = slabop.boundary;
@@ -576,7 +616,8 @@ var F2D = {};
 
         // density attributes
         this.source = new THREE.Vector3(0.8, 0.0, 0.0);
-        this.ink = new THREE.Vector3(0.0, 0.06, 0.19);
+        this.ink = new THREE.Vector3(0.0, 0.2, 0.19);
+        this.ink2 = new THREE.Vector3(0.0, 0.05, 0.19);
     };
 
     F2D.Solver.prototype = {
@@ -642,11 +683,25 @@ var F2D = {};
                             point,
                             this.velocity
                         );
+                        this.splat2.compute(
+                            renderer,
+                            this.velocity,
+                            force,
+                            point,
+                            this.velocity
+                        );
                         this.boundary.compute(renderer, this.velocity, -1, this.velocity);
                     }
 
                     if (motion.right) {
                         this.splat.compute(
+                            renderer,
+                            this.density,
+                            this.source,
+                            point,
+                            this.density
+                        );
+                        this.splat2.compute(
                             renderer,
                             this.density,
                             this.source,
@@ -716,6 +771,7 @@ var F2D = {};
             poissonPressureEq: new F2D.Jacobi(shaders.jacobiscalar, grid),
             gradient: new F2D.Gradient(shaders.gradient, grid),
             splat: new F2D.Splat(shaders.splat, grid),
+            splat2: new F2D.Splat(shaders.splat, grid),
             vorticity: new F2D.Vorticity(shaders.vorticity, grid),
             vorticityConfinement: new F2D.VorticityConfinement(shaders.vorticityforce, grid, time),
             boundary: new F2D.Boundary(shaders.boundary, grid)

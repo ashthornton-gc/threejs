@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import Stats from 'stats.js';
 import dat from 'dat.gui';
 import F2D from './project5/f2d';
+let SPECTOR = require('spectorjs');
 
 const project5 = function() {
 
@@ -10,12 +11,12 @@ const project5 = function() {
 
     let windowSize = new THREE.Vector2(renderWidth, renderHeight);
 
-    let renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.autoClear = false;
+    let renderer = new THREE.WebGLRenderer({alpha: true});
+    renderer.autoClear = true;
     renderer.sortObjects = false;
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(windowSize.x, windowSize.y);
-    renderer.setClearColor(0x00ff00);
+    renderer.setClearColor(0xFFFFFF, 1);
     document.body.appendChild(renderer.domElement);
 
     let stats = new Stats();
@@ -64,10 +65,23 @@ const project5 = function() {
                 solver.ink.z * 255
             ]
         };
+        let splatSettings2 = {
+            color: [
+                solver.ink2.x * 255,
+                solver.ink2.y * 255,
+                solver.ink2.z * 255
+            ]
+        };
         let splatFolder = gui.addFolder("Splat");
         splatFolder.add(solver.splat, "radius").min(0);
         splatFolder.addColor(splatSettings, "color").onChange(function(value) {
             solver.ink.set(value[0] / 255, value[1] / 255, value[2] / 255);
+        });
+
+        let splatFolder2 = gui.addFolder("Splat2");
+        splatFolder2.add(solver.splat2, "radius").min(0);
+        splatFolder2.addColor(splatSettings2, "color").onChange(function(value) {
+            solver.ink2.set(value[0] / 255, value[1] / 255, value[2] / 255);
         });
 
         let gridFolder = gui.addFolder("Grid");
@@ -77,6 +91,9 @@ const project5 = function() {
         window.addEventListener('resize', onWindowResize, false);
 
         animate();
+
+        let spector = new SPECTOR.Spector();
+        spector.displayUI();
     }
 
     var point = new THREE.Vector2();
@@ -127,6 +144,7 @@ const project5 = function() {
 
         display = displayScalar;
         display.scale.copy(solver.ink);
+        display.scale2.copy(solver.ink2);
         display.bias.set(0, 0, 0);
         read = solver.density.read;
 
