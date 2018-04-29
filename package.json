@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@tweenjs/tween.js": "^17.2.0",
     "babel-cli": "^6.23.0",
     "babel-core": "^6.26.0",
     "babel-eslint": "^7.1.1",
