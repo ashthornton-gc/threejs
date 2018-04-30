@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as THREE_ADDONS from 'three-addons';
 import OrbitControls from 'three-orbitcontrols';
 import dat from 'dat.gui';
 const TWEEN = require('@tweenjs/tween.js');
@@ -152,8 +153,15 @@ const sphereToggle = function() {
         toggleActive = false,
         mouse = new THREE.Vector2(),
         raycaster = new THREE.Raycaster(),
-        gui;
-
+        gui,
+        composer, effectFilm,
+        rtParameters = {
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format: THREE.RGBFormat,
+            stencilBuffer: true
+        },
+        delta = 0.01;
 
     init();
     buildGui();
@@ -174,7 +182,7 @@ const sphereToggle = function() {
 
         // camera
         camera = new THREE.PerspectiveCamera( 50, renderWidth / renderHeight, 1, 100 );
-        camera.position.set( 10.3, 17.8, 11 );
+        camera.position.set( 0, 20, 0 );
         camera.lookAt(new THREE.Vector3(0, 0, 0));
 
         controls = new OrbitControls( camera );
@@ -240,30 +248,31 @@ const sphereToggle = function() {
         scene.add( pointLight );
         //scene.add( new THREE.DirectionalLightHelper( pointLight ) );
 
-        let shader = THREE.ShaderChunk.shadowmap_pars_fragment;
-        shader = shader.replace(
-            '#ifdef USE_SHADOWMAP',
-            '#ifdef USE_SHADOWMAP' +
-            document.getElementById( 'PCSS' ).textContent
-        );
-        shader = shader.replace(
-            '#if defined( SHADOWMAP_TYPE_PCF )',
-            document.getElementById( 'PCSSGetShadow' ).textContent +
-            '#if defined( SHADOWMAP_TYPE_PCF )'
-        );
-        //THREE.ShaderChunk.shadowmap_pars_fragment = shader;
+        // let shader = THREE.ShaderChunk.shadowmap_pars_fragment;
+        // shader = shader.replace(
+        //     '#ifdef USE_SHADOWMAP',
+        //     '#ifdef USE_SHADOWMAP' +
+        //     document.getElementById( 'PCSS' ).textContent
+        // );
+        // shader = shader.replace(
+        //     '#if defined( SHADOWMAP_TYPE_PCF )',
+        //     document.getElementById( 'PCSSGetShadow' ).textContent +
+        //     '#if defined( SHADOWMAP_TYPE_PCF )'
+        // );
+        // THREE.ShaderChunk.shadowmap_pars_fragment = shader;
+
+        effectFilm = new THREE_ADDONS.FilmPass( 0.09, 0, 0, false );
+        effectFilm.renderToScreen = true;
+        let renderScene = new THREE_ADDONS.RenderPass( scene, camera );
+
+        composer = new THREE_ADDONS.EffectComposer( renderer, new THREE.WebGLRenderTarget( renderWidth, renderHeight, rtParameters ) );
+        composer.addPass( renderScene );
+        // composer.addPass( new THREE_ADDONS.ShaderPass( THREE_ADDONS.CopyShader ) );
+        composer.addPass( effectFilm );
 
         window.addEventListener('resize', onWindowResize, false);
         document.addEventListener( 'mousedown', onDocumentMouseDown, false );
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-
-        document.getElementById( "top-down" ).addEventListener( 'click', function() {
-            camera.position.set( 0, 20, 0 );
-        }, false );
-
-        document.getElementById( "perspective" ).addEventListener( 'click', function() {
-            camera.position.set( 10.3, 17.8, 11 );
-        }, false );
 
     }
 
@@ -289,8 +298,8 @@ const sphereToggle = function() {
         TWEEN.update();
         controls.update();
 
-        renderer.render( scene, camera );
-
+        // renderer.render( scene, camera );
+        composer.render( delta );
     }
 
     function onDocumentMouseMove( event ) {
@@ -334,7 +343,7 @@ const sphereToggle = function() {
                     .start();
 
                 new TWEEN.Tween( sphere.position )
-                    .to({ x: 2.95 }, 800 )
+                    .to({ x: 2.95 }, 1400 )
                     .easing( TWEEN.Easing.Exponential.InOut )
                     .start();
 
@@ -358,7 +367,7 @@ const sphereToggle = function() {
                     .start();
 
                 new TWEEN.Tween( sphere.position )
-                    .to({ x: 0 }, 800 )
+                    .to({ x: 0 }, 1400 )
                     .easing( TWEEN.Easing.Exponential.InOut )
                     .start();
 
@@ -386,6 +395,11 @@ const sphereToggle = function() {
             trackEmissive: trackMat.emissive.getHex(),
             trackSpecular: trackMat.specular.getHex(),
             trackShininess: trackMat.shininess,
+            cameraPosition: 'top down',
+            nIntensity: effectFilm.uniforms.nIntensity.value,
+            sIntensity: effectFilm.uniforms.sIntensity.value,
+            sCount: effectFilm.uniforms.sCount.value,
+            noiseEnabled: true
         };
 
         let lightFolder = gui.addFolder('Light');
@@ -451,7 +465,43 @@ const sphereToggle = function() {
             planeMat.shininess = val;
         } );
 
+        let noiseFolder = gui.addFolder('Noise');
+
+        noiseFolder.add( params, 'nIntensity').onChange( function ( val ) {
+            effectFilm.uniforms.nIntensity.value = val;
+        } );
+
+        noiseFolder.add( params, 'sIntensity').onChange( function ( val ) {
+            effectFilm.uniforms.sIntensity.value = val;
+        } );
+
+        noiseFolder.add( params, 'sCount').onChange( function ( val ) {
+            effectFilm.uniforms.sCount.value = val;
+        } );
+
+        noiseFolder.add( params, 'noiseEnabled' ).onChange( function ( val ) {
+            effectFilm.renderToScreen = val;
+        } );
+
+        gui.add( params, 'cameraPosition', [ 'top down', 'perspective' ] ).onChange( function ( val ) {
+
+            if( val === 'top down' ) {
+                camera.position.set( 0, 20, 0 );
+            } else {
+                camera.position.set( 10.3, 17.8, 11 );
+            }
+
+        });
+
         gui.close();
+
+        document.getElementsByClassName('main')[0].addEventListener('mouseenter', function() {
+            controls.enabled = false;
+        }, false);
+
+        document.getElementsByClassName('main')[0].addEventListener('mouseleave', function() {
+            controls.enabled = true;
+        }, false);
     }
 
 };
