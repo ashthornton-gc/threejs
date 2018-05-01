@@ -42,12 +42,15 @@ var hoverEffect = function(opts) {
             // vec2 distortedPosition2 = vec2(uv.x - (1.0 - dispFactor) * (disp1.r*effectFactor), uv.y);
 
             vec2 distortedPosition = vec2(uv.x, uv.y);
-            vec2 distortedPosition2 = vec2(uv.x * (1.0 + dispFactor) + (disp2.r*effectFactor), uv.y * (1.0 + dispFactor) + (disp2.r*effectFactor));
+            vec2 distortedPosition2 = vec2(uv.x * 0.8 * (disp1.r*effectFactor), uv.y * 0.8 * (disp1.r*effectFactor));
+
+            // vec2 distortedPosition = vec2(uv.x, uv.y);
+            // vec2 distortedPosition2 = vec2(uv.x * (1.0 + dispFactor) + (disp1.r*effectFactor), uv.y * (1.0 + dispFactor) + (disp1.r*effectFactor));
 
             vec4 _texture = texture2D(texture, distortedPosition);
             vec4 _texture2 = texture2D(texture2, distortedPosition2);
 
-            vec4 finalTexture = mix(disp1, disp2, dispFactor);
+            vec4 finalTexture = mix(_texture, _texture2, dispFactor);
 
             gl_FragColor = finalTexture;
             // gl_FragColor = disp;
@@ -112,7 +115,7 @@ var hoverEffect = function(opts) {
 
     var mat = new THREE.ShaderMaterial({
         uniforms: {
-            effectFactor: { type: "f", value: 0.1 },
+            effectFactor: { type: "f", value: 0.5 },
             dispFactor: { type: "f", value: 0.0 },
             texture: { type: "t", value: texture1 },
             texture2: { type: "t", value: texture2 },
