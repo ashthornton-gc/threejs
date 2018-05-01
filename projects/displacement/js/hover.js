@@ -7,45 +7,25 @@ var hoverEffect = function(opts) {
         }
     `;
 
-    var fragment = `
+    var fragmentLeft = `
         varying vec2 vUv;
 
         uniform sampler2D texture;
-        uniform sampler2D texture2;
-        uniform sampler2D disp;
+        uniform sampler2D texture2;        
 
         // uniform float time;
-        // uniform float _rot;
         uniform float dispFactor;
         uniform float effectFactor;
 
-        // vec2 rotate(vec2 v, float a) {
-        //  float s = sin(a);
-        //  float c = cos(a);
-        //  mat2 m = mat2(c, -s, s, c);
-        //  return m * v;
-        // }
-
         void main() {
 
-            vec2 uv = vUv;
+            vec2 uv = vec2(vUv.x - 0.5, vUv.y);
 
-            // uv -= 0.5;
-            // vec2 rotUV = rotate(uv, _rot);
-            // uv += 0.5;
-
-            // vec4 disp = texture2D(disp, uv);
-            vec4 disp1 = texture2D(texture, uv);
-            vec4 disp2 = texture2D(texture2, uv);
-
-            // vec2 distortedPosition = vec2(uv.x + dispFactor * (disp2.r*effectFactor), uv.y);
-            // vec2 distortedPosition2 = vec2(uv.x - (1.0 - dispFactor) * (disp1.r*effectFactor), uv.y);
-
-            vec2 distortedPosition = vec2(uv.x, uv.y);
-            vec2 distortedPosition2 = vec2(uv.x * 0.8 * (disp1.r*effectFactor), uv.y * 0.8 * (disp1.r*effectFactor));
-
-            // vec2 distortedPosition = vec2(uv.x, uv.y);
-            // vec2 distortedPosition2 = vec2(uv.x * (1.0 + dispFactor) + (disp1.r*effectFactor), uv.y * (1.0 + dispFactor) + (disp1.r*effectFactor));
+            vec4 orig1 = texture2D(texture, uv);
+            vec4 orig2 = texture2D(texture2, uv);
+                        
+             vec2 distortedPosition = vec2(uv.x - dispFactor * (orig2.r*0.1), uv.y);
+             vec2 distortedPosition2 = vec2(uv.x + (1.0 - dispFactor) * (orig1.r*0.1), uv.y);
 
             vec4 _texture = texture2D(texture, distortedPosition);
             vec4 _texture2 = texture2D(texture2, distortedPosition2);
@@ -53,7 +33,35 @@ var hoverEffect = function(opts) {
             vec4 finalTexture = mix(_texture, _texture2, dispFactor);
 
             gl_FragColor = finalTexture;
-            // gl_FragColor = disp;
+        }
+    `;
+
+    var fragmentRight = `
+        varying vec2 vUv;
+
+        uniform sampler2D texture;
+        uniform sampler2D texture2;        
+
+        // uniform float time;
+        uniform float dispFactor;
+        uniform float effectFactor;
+
+        void main() {
+
+            vec2 uv = vec2(vUv.x + 0.5, vUv.y);
+
+            vec4 orig1 = texture2D(texture, uv);
+            vec4 orig2 = texture2D(texture2, uv);
+                        
+             vec2 distortedPosition = vec2(uv.x + dispFactor * (orig2.r*0.1), uv.y);
+             vec2 distortedPosition2 = vec2(uv.x - (1.0 - dispFactor) * (orig1.r*0.1), uv.y);
+
+            vec4 _texture = texture2D(texture, distortedPosition);
+            vec4 _texture2 = texture2D(texture2, distortedPosition2);
+
+            vec4 finalTexture = mix(_texture, _texture2, dispFactor);
+
+            gl_FragColor = finalTexture;
         }
     `;
 
@@ -87,17 +95,12 @@ var hoverEffect = function(opts) {
 
     var renderer = new THREE.WebGLRenderer({
         antialias: false,
-        // alpha: true
     });
 
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0xffffff, 0.0);
     renderer.setSize(parent.offsetWidth, parent.offsetHeight);
     parent.appendChild(renderer.domElement);
-
-    // var addToGPU = function(t) {
-    //     renderer.setTexture2D(t, 0);
-    // };
 
     var loader = new THREE.TextureLoader();
     loader.crossOrigin = "";
@@ -113,7 +116,7 @@ var hoverEffect = function(opts) {
     texture1.anisotropy = renderer.getMaxAnisotropy();
     texture2.anisotropy = renderer.getMaxAnisotropy();
 
-    var mat = new THREE.ShaderMaterial({
+    var matLeft = new THREE.ShaderMaterial({
         uniforms: {
             effectFactor: { type: "f", value: 0.5 },
             dispFactor: { type: "f", value: 0.0 },
@@ -123,7 +126,22 @@ var hoverEffect = function(opts) {
         },
 
         vertexShader: vertex,
-        fragmentShader: fragment,
+        fragmentShader: fragmentLeft,
+        transparent: true,
+        opacity: 1.0
+    });
+
+    var matRight = new THREE.ShaderMaterial({
+        uniforms: {
+            effectFactor: { type: "f", value: 0.5 },
+            dispFactor: { type: "f", value: 0.0 },
+            texture: { type: "t", value: texture1 },
+            texture2: { type: "t", value: texture2 },
+            disp: { type: "t", value: disp }
+        },
+
+        vertexShader: vertex,
+        fragmentShader: fragmentRight,
         transparent: true,
         opacity: 1.0
     });
@@ -133,8 +151,13 @@ var hoverEffect = function(opts) {
         parent.offsetHeight,
         1
     );
-    var object = new THREE.Mesh(geometry, mat);
-    scene.add(object);
+    var left = new THREE.Mesh(geometry, matLeft);
+    left.position.set(-419, 0, 0);
+    scene.add(left);
+
+    var right = new THREE.Mesh(geometry, matRight);
+    right.position.set(419, 0, 0);
+    scene.add(right);
 
     var addEvents = function(){
         var evtIn = "mouseenter";
@@ -144,14 +167,28 @@ var hoverEffect = function(opts) {
             evtOut = "touchend";
         }
         parent.addEventListener(evtIn, function(e) {
-            TweenMax.to(mat.uniforms.dispFactor, speedIn, {
+            TweenMax.to(matLeft.uniforms.dispFactor, speedIn, {
                 value: 1,
                 ease: easing
             });
         });
 
         parent.addEventListener(evtOut, function(e) {
-            TweenMax.to(mat.uniforms.dispFactor, speedOut, {
+            TweenMax.to(matLeft.uniforms.dispFactor, speedOut, {
+                value: 0,
+                ease: easing
+            });
+        });
+
+        parent.addEventListener(evtIn, function(e) {
+            TweenMax.to(matRight.uniforms.dispFactor, speedIn, {
+                value: 1,
+                ease: easing
+            });
+        });
+
+        parent.addEventListener(evtOut, function(e) {
+            TweenMax.to(matRight.uniforms.dispFactor, speedOut, {
                 value: 0,
                 ease: easing
             });
@@ -165,21 +202,6 @@ var hoverEffect = function(opts) {
     window.addEventListener("resize", function(e) {
         renderer.setSize(parent.offsetWidth, parent.offsetHeight);
     });
-
-
-    this.next = function(){
-        TweenMax.to(mat.uniforms.dispFactor, speedIn, {
-            value: 1,
-            ease: easing
-        });
-    }
-
-    this.previous = function(){
-        TweenMax.to(mat.uniforms.dispFactor, speedOut, {
-            value: 0,
-            ease: easing
-        });
-    };
 
     var animate = function() {
         requestAnimationFrame(animate);
