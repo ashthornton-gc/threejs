@@ -47,13 +47,27 @@ const displacementSlider = function(opts) {
     let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     let renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
+    let renderW, renderH;
+
+    if( renderWidth > canvasWidth ) {
+        renderW = renderWidth;
+    } else {
+        renderW = canvasWidth;
+    }
+
+    if( renderHeight > canvasHeight ) {
+        renderH = renderHeight;
+    } else {
+        renderH = canvasHeight;
+    }
+
     let renderer = new THREE.WebGLRenderer({
         antialias: false,
     });
 
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setClearColor( 0x24272A, 1.0 );
-    renderer.setSize( canvasWidth, canvasHeight );
+    renderer.setSize( renderW, renderH );
     parent.appendChild( renderer.domElement );
 
     let loader = new THREE.TextureLoader();
@@ -141,7 +155,7 @@ const displacementSlider = function(opts) {
                     autoAlpha: 0,
                     filter: 'blur(10px)',
                     y: 20,
-                    //ease: 'Expo.easeInOut',
+                    ease: 'Expo.easeIn',
                     onComplete: function() {
                         slideTitleEl.innerHTML = nextSlideTitle;
 
@@ -163,7 +177,7 @@ const displacementSlider = function(opts) {
     addEvents();
 
     window.addEventListener("resize", function(e) {
-        renderer.setSize(canvasWidth, canvasHeight);
+        renderer.setSize(renderW, renderH);
     });
 
     let animate = function() {
