@@ -11,9 +11,9 @@
 		<main>
 			<div id="slider">
 
-				<img src="img/tiger.jpg" alt="Image"/>
-				<img src="img/lion.jpg" alt="Image"/>
-				<img src="img/leopard.jpg" alt="Image"/>
+				<img src="img/tiger.jpg" />
+				<img src="img/lion.jpg" />
+				<img src="img/leopard.jpg" />
 
 				<div id="pagination">
 					<button class="active" data-slide="0"></button>
@@ -21,16 +21,11 @@
 					<button data-slide="2"></button>
 					<button data-slide="3"></button>
 				</div>
-				
+
 			</div>
 		</main>
 
-		<script src="js/imagesloaded.pkgd.min.js"></script>
 		<script src="/js/main.min.js"></script>
-		<script>
-			imagesLoaded( document.querySelectorAll('img'), () => {
-				document.body.classList.remove('loading');
-			});
-		</script>
+
 	</body>
 </html>

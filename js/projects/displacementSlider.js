@@ -29,9 +29,9 @@ const displacementSlider = function(opts) {
             vec4 orig1 = texture2D(currentImage, uv);
             vec4 orig2 = texture2D(nextImage, uv);
 
-            _currentImage = texture2D(currentImage, vec2(uv.x, uv.y + dispFactor * (orig2.r * intensity)));
+            _currentImage = texture2D(currentImage, vec2(uv.x, uv.y + dispFactor * (orig2.y * intensity)));
 
-            _nextImage = texture2D(nextImage, vec2(uv.x, uv.y + (1.0 - dispFactor) * (orig1.r * intensity)));
+            _nextImage = texture2D(nextImage, vec2(uv.x, uv.y + (1.0 - dispFactor) * (orig1.y * intensity)));
 
             vec4 finalTexture = mix(_currentImage, _nextImage, dispFactor);
 
@@ -40,19 +40,33 @@ const displacementSlider = function(opts) {
         }
     `;
 
-    let images = opts.images;
-
-    let image1src = images[0].getAttribute('src');
-    let image2src = images[1].getAttribute('src');
-    let image3src = images[2].getAttribute('src');
-
-    let imageWidth = images[0].clientWidth;
-    let imageHeight = images[0].clientHeight;
-
+    let images = opts.images, image, sliderImages = [];;
+    let canvasWidth = images[0].clientWidth;
+    let canvasHeight = images[0].clientHeight;
     let parent = opts.parent;
-
     let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     let renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+
+    let renderer = new THREE.WebGLRenderer({
+        antialias: false,
+    });
+
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setClearColor( 0x24272A, 1.0 );
+    renderer.setSize( canvasWidth, canvasHeight );
+    parent.appendChild( renderer.domElement );
+
+    let loader = new THREE.TextureLoader();
+    loader.crossOrigin = "";
+
+    images.forEach( ( img ) => {
+
+        image = loader.load( img.getAttribute( 'src' ) );
+        image.magFilter = image.minFilter = THREE.LinearFilter;
+        image.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        sliderImages.push( image );
+
+    });
 
     let scene = new THREE.Scene();
     scene.background = new THREE.Color( 0x24272A );
@@ -67,37 +81,12 @@ const displacementSlider = function(opts) {
 
     camera.position.z = 1;
 
-    let renderer = new THREE.WebGLRenderer({
-        antialias: false,
-    });
-
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x24272A, 1.0);
-    renderer.setSize(imageWidth, imageHeight);
-    parent.appendChild(renderer.domElement);
-
-    let loader = new THREE.TextureLoader();
-    loader.crossOrigin = "";
-    let image1 = loader.load(image1src);
-    let image2 = loader.load(image2src);
-    let image3 = loader.load(image3src);
-
-    let sliderImages = [ image1, image2, image3 ];
-
-    image1.magFilter = image2.magFilter = image3.magFilter = THREE.LinearFilter;
-    image1.minFilter = image2.minFilter = image3.minFilter = THREE.LinearFilter;
-
-    image1.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    image2.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    image3.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
     let mat = new THREE.ShaderMaterial({
         uniforms: {
             dispFactor: { type: "f", value: 0.0 },
             currentImage: { type: "t", value: sliderImages[0] },
             nextImage: { type: "t", value: sliderImages[1] },
         },
-
         vertexShader: vertex,
         fragmentShader: fragment,
         transparent: true,
@@ -133,11 +122,9 @@ const displacementSlider = function(opts) {
                     value: 1,
                     ease: 'Expo.easeInOut',
                     onComplete: function() {
-
                         mat.uniforms.currentImage.value = sliderImages[ slideId ];
                         mat.uniforms.currentImage.needsUpdate = true;
                         mat.uniforms.dispFactor.value = 0.0;
-
                     }
                 });
 
@@ -150,7 +137,7 @@ const displacementSlider = function(opts) {
     addEvents();
 
     window.addEventListener("resize", function(e) {
-        renderer.setSize(imageWidth, imageHeight);
+        renderer.setSize(canvasWidth, canvasHeight);
     });
 
     let animate = function() {
