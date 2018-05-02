@@ -14,54 +14,37 @@ const displacementSlider = function(opts) {
     let fragment = `
         varying vec2 vUv;
 
-        uniform sampler2D texture;
-        uniform sampler2D texture2;
-        uniform sampler2D texture3;
+        uniform sampler2D currentImage;
+        uniform sampler2D nextImage;
 
         uniform float dispFactor;
-        uniform float effectFactor;
 
         void main() {
 
             vec2 uv = vUv;
-            vec4 _texture;
-            vec4 _texture2;
-            vec4 _texture3;
+            vec4 _currentImage;
+            vec4 _nextImage;
             float intensity = 0.1;
 
-            vec4 orig1 = texture2D(texture, uv);
-            vec4 orig2 = texture2D(texture2, uv);
+            vec4 orig1 = texture2D(currentImage, uv);
+            vec4 orig2 = texture2D(nextImage, uv);
 
-            vec2 distortedPosition = vec2(uv.x, uv.y + dispFactor * (orig2.r*0.8));
-            vec2 distortedPosition2 = vec2(uv.x - (1.0 - dispFactor) * (orig1.y * 0.8), uv.y);
+            _currentImage = texture2D(currentImage, vec2(uv.x, uv.y + dispFactor * (orig2.r * intensity)));
 
-            //vec4 _texture = texture2D(texture, distortedPosition);
-            //vec4 _texture2 = texture2D(texture2, distortedPosition2);
+            _nextImage = texture2D(nextImage, vec2(uv.x, uv.y + (1.0 - dispFactor) * (orig1.r * intensity)));
 
-            if( orig2.y > 0.1) {
-                _texture = texture2D(texture, vec2(uv.x, uv.y - dispFactor * (orig2.r * intensity)));
-            } else {
-                _texture = texture2D(texture, vec2(uv.x, uv.y + dispFactor * (orig2.r * intensity)));
-            }
+            vec4 finalTexture = mix(_currentImage, _nextImage, dispFactor);
 
-            if( orig1.y > 0.1) {
-                _texture2 = texture2D(texture2, vec2(uv.x, uv.y - (1.0 - dispFactor) * (orig1.b * intensity)));
-            } else {
-                _texture2 = texture2D(texture2, vec2(uv.x, uv.y + (1.0 - dispFactor) * (orig1.b * intensity)));
-            }
-
-            vec4 finalTexture = mix(_texture, _texture2, dispFactor);
-
-            gl_FragColor = orig1;
+            gl_FragColor = finalTexture;
 
         }
     `;
 
     let images = opts.images;
 
-    let image1 = images[0].getAttribute('src');
-    let image2 = images[1].getAttribute('src');
-    let image3 = images[2].getAttribute('src');
+    let image1src = images[0].getAttribute('src');
+    let image2src = images[1].getAttribute('src');
+    let image3src = images[2].getAttribute('src');
 
     let imageWidth = images[0].clientWidth;
     let imageHeight = images[0].clientHeight;
@@ -95,24 +78,24 @@ const displacementSlider = function(opts) {
 
     let loader = new THREE.TextureLoader();
     loader.crossOrigin = "";
-    let texture1 = loader.load(image1);
-    let texture2 = loader.load(image2);
-    let texture3 = loader.load(image3);
+    let image1 = loader.load(image1src);
+    let image2 = loader.load(image2src);
+    let image3 = loader.load(image3src);
 
-    texture1.magFilter = texture2.magFilter = THREE.LinearFilter;
-    texture1.minFilter = texture2.minFilter = THREE.LinearFilter;
+    let sliderImages = [ image1, image2, image3 ];
 
-    texture1.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    texture2.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    texture3.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    image1.magFilter = image2.magFilter = image3.magFilter = THREE.LinearFilter;
+    image1.minFilter = image2.minFilter = image3.minFilter = THREE.LinearFilter;
+
+    image1.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    image2.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    image3.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
     let mat = new THREE.ShaderMaterial({
         uniforms: {
-            effectFactor: { type: "f", value: 0.5 },
             dispFactor: { type: "f", value: 0.0 },
-            texture: { type: "t", value: texture1 },
-            texture2: { type: "t", value: texture2 },
-            texture3: { type: "t", value: texture3 }
+            currentImage: { type: "t", value: sliderImages[0] },
+            nextImage: { type: "t", value: sliderImages[1] },
         },
 
         vertexShader: vertex,
@@ -138,27 +121,25 @@ const displacementSlider = function(opts) {
 
             el.addEventListener('click', function(e) {
 
-                let slideId = this.dataset.slide;
-
                 document.getElementById('pagination').querySelectorAll('.active')[0].className = '';
-
                 this.className = 'active';
 
-                if( slideId === '2') {
+                let slideId = parseInt( this.dataset.slide, 10 );
 
-                    TweenLite.to(mat.uniforms.dispFactor, 1.2, {
-                        value: 1,
-                        ease: 'Expo.easeInOut'
-                    });
+                mat.uniforms.nextImage.value = sliderImages[ slideId ];
+                mat.uniforms.nextImage.needsUpdate = true;
 
-                } else {
+                TweenLite.to(mat.uniforms.dispFactor, 1.2, {
+                    value: 1,
+                    ease: 'Expo.easeInOut',
+                    onComplete: function() {
 
-                    TweenLite.to(mat.uniforms.dispFactor, 1.2, {
-                        value: 0,
-                        ease: 'Expo.easeInOut'
-                    });
+                        mat.uniforms.currentImage.value = sliderImages[ slideId ];
+                        mat.uniforms.currentImage.needsUpdate = true;
+                        mat.uniforms.dispFactor.value = 0.0;
 
-                }
+                    }
+                });
 
             });
 
