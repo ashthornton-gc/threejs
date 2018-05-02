@@ -9,13 +9,8 @@ html {
 	background: #fff;
 }
 
-canvas {
-	width: 100%;
-	height: 100%;
-}
-
 body {
-	background-color: #202325;
+	background-color: #24272A;
 	overflow: hidden;
 }
 
@@ -28,13 +23,26 @@ main {
 #slider {
 	width: 100%;
 	max-width: 1200px;
+	height: 100%;
 	margin: 0 auto;
 }
 
+#slider canvas {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 2;
+}
+
 #slider img {
-	display: none;
+	/*display: none;*/
 	width: 100%;
 	max-width: 100%;
+	position: relative;
+	z-index: 0;
 }
 
 #pagination {
@@ -42,6 +50,7 @@ main {
 	top: 50%;
 	transform: translateY(-50%);
 	right: 30px;
+	z-index: 3;
 }
 
 #pagination button {

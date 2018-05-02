@@ -52,21 +52,27 @@ const displacementSlider = function(opts) {
 
             vec4 finalTexture = mix(_texture, _texture2, dispFactor);
 
-            gl_FragColor = finalTexture;
+            gl_FragColor = orig1;
 
         }
     `;
 
-    let image1 = opts.image2;
-    let image2 = opts.image3;
-    let image3 = opts.image3;
+    let images = opts.images;
+
+    let image1 = images[0].getAttribute('src');
+    let image2 = images[1].getAttribute('src');
+    let image3 = images[2].getAttribute('src');
+
+    let imageWidth = images[0].clientWidth;
+    let imageHeight = images[0].clientHeight;
+
     let parent = opts.parent;
 
     let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
     let renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
 
     let scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0x24272a );
+    scene.background = new THREE.Color( 0x24272A );
     let camera = new THREE.OrthographicCamera(
         renderWidth / -2,
         renderWidth / 2,
@@ -83,8 +89,8 @@ const displacementSlider = function(opts) {
     });
 
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x24272a, 1.0);
-    renderer.setSize(renderWidth, renderHeight);
+    renderer.setClearColor(0x24272A, 1.0);
+    renderer.setSize(imageWidth, imageHeight);
     parent.appendChild(renderer.domElement);
 
     let loader = new THREE.TextureLoader();
@@ -163,9 +169,7 @@ const displacementSlider = function(opts) {
     addEvents();
 
     window.addEventListener("resize", function(e) {
-        let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-        let renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-        renderer.setSize(renderWidth, renderHeight);
+        renderer.setSize(imageWidth, imageHeight);
     });
 
     let animate = function() {

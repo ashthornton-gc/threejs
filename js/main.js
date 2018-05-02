@@ -5,6 +5,7 @@
 //import project5 from './projects/project5';
 // import sphereToggle from './projects/sphereToggle';
 import displacementSlider from './projects/displacementSlider';
+const imagesLoaded = require('imagesloaded');
 
 //loader();
 // depthOfField();
@@ -13,11 +14,18 @@ import displacementSlider from './projects/displacementSlider';
 //project5();
 // sphereToggle();
 
-const el = document.getElementById('slider');
-const imgs = Array.from(el.querySelectorAll('img'));
-new displacementSlider({
-    parent: el,
-    image1: imgs[0].getAttribute('src'),
-    image2: imgs[1].getAttribute('src'),
-    image3: imgs[2].getAttribute('src'),
+imagesLoaded( document.querySelectorAll('img'), () => {
+
+    document.body.classList.remove('loading');
+
+    const el = document.getElementById('slider');
+    const imgs = Array.from(el.querySelectorAll('img'));
+    new displacementSlider({
+        parent: el,
+        images: imgs
+    });
+    //imgs.forEach( (img) => {
+    //    img.style.display = 'none';
+    //});
+
 });

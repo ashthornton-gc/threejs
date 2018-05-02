@@ -21,6 +21,7 @@
     "eslint": "^4.7.2",
     "eslint-loader": "^1.9.0",
     "gsap": "^1.20.4",
+    "imagesloaded": "^4.1.4",
     "path": "^0.12.7",
     "spectorjs": "^0.9.2",
     "webpack": "^3.6.0",
