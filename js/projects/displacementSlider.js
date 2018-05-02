@@ -128,6 +128,29 @@ const displacementSlider = function(opts) {
                     }
                 });
 
+                let slideTitleEl = document.getElementById('slide-title');
+                let nextSlideTitle = document.querySelectorAll(`[data-slide-title="${slideId}"]`)[0].innerHTML;
+                
+                TweenLite.fromTo( slideTitleEl, 0.6,
+                {
+                    autoAlpha: 1,
+                    filter: 'blur(0px)'
+                },
+                {
+                    autoAlpha: 0,
+                    filter: 'blur(10px)',
+                    //ease: 'Expo.easeInOut',
+                    onComplete: function() {
+                        slideTitleEl.innerHTML = nextSlideTitle;
+
+                        TweenLite.to( slideTitleEl, 0.6, {
+                            autoAlpha: 1,
+                            filter: 'blur(0px)',
+                            //ease: 'Expo.easeInOut'
+                        })
+                    }
+                });
+
             });
 
         });

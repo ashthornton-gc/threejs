@@ -141,6 +141,10 @@ main {
 		margin: 20px 0 60px;
 	}
 
+	span {
+		display: none;
+	}
+
 	.meta {
 		display: inline-block;
 		font-family: 'Arial', sans-serif;
@@ -176,7 +180,7 @@ main {
 	top: 50%;
 	transform: translateY(-50%);
 	right: 30px;
-	z-index: 3;
+	z-index: 6;
 
 	button {
 		display: block;
