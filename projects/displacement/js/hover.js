@@ -11,7 +11,7 @@ var hoverEffect = function(opts) {
         varying vec2 vUv;
 
         uniform sampler2D texture;
-        uniform sampler2D texture2;        
+        uniform sampler2D texture2;
 
         // uniform float time;
         uniform float dispFactor;
@@ -26,23 +26,23 @@ var hoverEffect = function(opts) {
 
             vec4 orig1 = texture2D(texture, uv);
             vec4 orig2 = texture2D(texture2, uv);
-                        
+
             vec2 distortedPosition = vec2(uv.x, uv.y + dispFactor * (orig2.r*0.8));
             vec2 distortedPosition2 = vec2(uv.x - (1.0 - dispFactor) * (orig1.y * 0.8), uv.y);
-             
+
             //vec4 _texture = texture2D(texture, distortedPosition);
             //vec4 _texture2 = texture2D(texture2, distortedPosition2);
-            
-            if( orig2.y > 0.9) {
-                _texture = texture2D(texture, vec2(uv.x + dispFactor * (orig2.r * intensity), uv.y - dispFactor * (orig2.b * intensity)));
+
+            if( orig2.y > 0.1) {
+                _texture = texture2D(texture, vec2(uv.x, uv.y - dispFactor * (orig2.r * intensity)));
             } else {
-                _texture = texture2D(texture, vec2(uv.x - dispFactor * (orig2.r * intensity), uv.y + dispFactor * (orig2.b * intensity)));
+                _texture = texture2D(texture, vec2(uv.x, uv.y + dispFactor * (orig2.r * intensity)));
             }
-            
-            if( orig1.y > 0.9) {
-                _texture2 = texture2D(texture2, vec2(uv.x + (1.0 - dispFactor) * (orig1.g * intensity), uv.y - (1.0 - dispFactor) * (orig1.b * intensity)));
+
+            if( orig1.y > 0.1) {
+                _texture2 = texture2D(texture2, vec2(uv.x, uv.y - (1.0 - dispFactor) * (orig1.b * intensity)));
             } else {
-                _texture2 = texture2D(texture2, vec2(uv.x - (1.0 - dispFactor) * (orig1.g * intensity), uv.y + (1.0 - dispFactor) * (orig1.b * intensity)));
+                _texture2 = texture2D(texture2, vec2(uv.x, uv.y + (1.0 - dispFactor) * (orig1.b * intensity)));
             }
 
             vec4 finalTexture = mix(_texture, _texture2, dispFactor);
