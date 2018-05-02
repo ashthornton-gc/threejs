@@ -24,7 +24,7 @@ const displacementSlider = function(opts) {
             vec2 uv = vUv;
             vec4 _currentImage;
             vec4 _nextImage;
-            float intensity = 0.1;
+            float intensity = 0.3;
 
             vec4 orig1 = texture2D(currentImage, uv);
             vec4 orig2 = texture2D(nextImage, uv);
@@ -130,15 +130,17 @@ const displacementSlider = function(opts) {
 
                 let slideTitleEl = document.getElementById('slide-title');
                 let nextSlideTitle = document.querySelectorAll(`[data-slide-title="${slideId}"]`)[0].innerHTML;
-                
+
                 TweenLite.fromTo( slideTitleEl, 0.6,
                 {
                     autoAlpha: 1,
-                    filter: 'blur(0px)'
+                    filter: 'blur(0px)',
+                    y: 0
                 },
                 {
                     autoAlpha: 0,
                     filter: 'blur(10px)',
+                    y: 20,
                     //ease: 'Expo.easeInOut',
                     onComplete: function() {
                         slideTitleEl.innerHTML = nextSlideTitle;
@@ -146,6 +148,7 @@ const displacementSlider = function(opts) {
                         TweenLite.to( slideTitleEl, 0.6, {
                             autoAlpha: 1,
                             filter: 'blur(0px)',
+                            y: 0,
                             //ease: 'Expo.easeInOut'
                         })
                     }
