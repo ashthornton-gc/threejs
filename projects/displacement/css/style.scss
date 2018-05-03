@@ -68,6 +68,7 @@ header {
 	}
 
 	nav {
+		display: none;
 
 		a {
 			font-family: 'Arial', serif;
@@ -81,6 +82,12 @@ header {
 			&.active, &:hover {
 				color: white;
 			}
+		}
+	}
+
+	@media screen and (min-width: 800px) {
+		nav {
+			display: block;
 		}
 	}
 
@@ -144,15 +151,21 @@ main {
 }
 
 #slider-content {
+	padding: 0 10px;
 
 	h2 {
 		font-family: 'acta-display', serif;
 		font-weight: 400;
-		font-size: 110px;
+		font-size: 30px;
 		letter-spacing: -1px;
 		color: white;
-		line-height: 100px;
+		line-height: 30px;
 		margin: 20px 0 60px;
+
+		@media screen and (min-width: 800px) {
+			font-size: 110px;
+			line-height: 100px;
+		}
 	}
 
 	span {
@@ -162,11 +175,15 @@ main {
 	.meta {
 		display: inline-block;
 		font-family: 'Arial', sans-serif;
-		font-size: 13px;
+		font-size: 11px;
 		letter-spacing: 5px;
 		color: #88888a;
 		text-transform: uppercase;
 		position: relative;
+
+		@media screen and (min-width: 800px) {
+			font-size: 13px;
+		}
 
 		&:after {
 			content: '';
@@ -184,8 +201,12 @@ main {
 		margin-top: 10px;
 		font-family: 'acta-display', serif;
 		font-weight: 400;
-		font-size: 34px;
+		font-size: 18px;
 		color: white;
+
+		@media screen and (min-width: 800px) {
+			font-size: 34px;
+		}
 	}
 }
 
