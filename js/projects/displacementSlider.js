@@ -130,15 +130,15 @@ const displacementSlider = function(opts) {
             vec4 orig1 = texture2D(currentImage, uv);
             vec4 orig2 = texture2D(nextImage, uv);
             
-            float intensity = pnoise(1.5 - uv, vec2(1.0, 1.0));
+            float intensity = pnoise(1.0 - uv, vec2(1.0, 1.0));
             
             //if(uv.x < 0.48) {
             //    intensity = 0.9;
             //}
 
-            _currentImage = texture2D(currentImage, vec2(uv.x + dispFactor * (orig2.x * intensity), uv.y + dispFactor * (orig2 * intensity)));
+            _currentImage = texture2D(currentImage, vec2(uv.x, uv.y + dispFactor * (orig2 * intensity)));
 
-            _nextImage = texture2D(nextImage, vec2(uv.x - (1.0 - dispFactor) * (orig1.x * intensity), uv.y - (1.0 - dispFactor) * (orig1 * intensity)));
+            _nextImage = texture2D(nextImage, vec2(uv.x, uv.y + (1.0 - dispFactor) * (orig1 * intensity)));
 
             vec4 finalTexture = mix(_currentImage, _nextImage, dispFactor);
 
