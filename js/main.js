@@ -24,8 +24,5 @@ imagesLoaded( document.querySelectorAll('img'), () => {
         parent: el,
         images: imgs
     });
-    //imgs.forEach( (img) => {
-    //    img.style.display = 'none';
-    //});
 
 });
