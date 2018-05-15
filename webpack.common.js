@@ -2,10 +2,14 @@ const webpack = require('webpack');
 const path = require('path');
 
 module.exports = {
-    entry: './js/main.js',
+    entry: {
+        //all: './js/main.js',
+        'distortion-slider': './projects/distortion-slider/js/main.js',
+        'sphere-toggle': './projects/sphere-toggle/js/main.js'
+    },
     output: {
-        path: path.resolve(__dirname, 'js'),
-        filename: 'main.min.js'
+        //path: path.resolve(__dirname, 'projects/[name]/js'),
+        filename: './projects/[name]/js/main.min.js'
     },
     module: {
         rules: [
