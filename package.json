@@ -34,7 +34,7 @@
     "simplex-noise": "^2.4.0",
     "stats.js": "^0.17.0",
     "svg-mesh-3d": "^1.1.0",
-    "three": "^0.90.0",
+    "three": "^0.88.0",
     "three-addons": "^1.1.0",
     "three-canvas-renderer": "^2.0.0",
     "three-effectcomposer-es6": "0.0.4",
