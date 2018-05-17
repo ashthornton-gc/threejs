@@ -5,7 +5,8 @@ module.exports = {
     entry: {
         //all: './js/main.js',
         'distortion-slider': './projects/distortion-slider/js/main.js',
-        'sphere-toggle': './projects/sphere-toggle/js/main.js'
+        'sphere-toggle': './projects/sphere-toggle/js/main.js',
+        'lost': './projects/lost/js/main.js',
     },
     output: {
         //path: path.resolve(__dirname, 'projects/[name]/js'),

@@ -38,10 +38,10 @@ const sphereToggle = function() {
                     continue;
                 }
                 s = pathStr.substring( sidx, idx );
-                return isFloat ? parseFloat( s ) : parseInt( s );
+                return isFloat ? parseFloat( s ) : parseInt( s, 10 );
             }
             s = pathStr.substring( sidx );
-            return isFloat ? parseFloat( s ) : parseInt( s );
+            return isFloat ? parseFloat( s ) : parseInt( s, 10 );
         }
         function nextIsNum() {
             let c;
