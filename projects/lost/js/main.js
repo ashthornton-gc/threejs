@@ -423,7 +423,7 @@ const lostIntro = function() {
 
         loader.load( 'font/futura.json', function ( font ) {
 
-            textGeom = new THREE.TextGeometry( 'L O S T', {
+            textGeom = new THREE.TextGeometry( 'F U C K  Y O U', {
                 font: font,
                 size: 5,
                 height: 0.5,
