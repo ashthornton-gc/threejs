@@ -4,6 +4,266 @@ import { TimelineLite } from 'gsap';
 
 const lostIntro = function() {
 
+    let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
+        renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
+        scene, camera, renderer, controls,
+        group,
+        timeline,
+        font,
+        textGeom, textMat, text,
+        light,
+        material_depth,
+        inputWrap, input, execute;
+
+    let postprocessing = {};
+    let bokeh_params = {
+        shaderFocus	: false,
+        fstop 		: 2.6 * 2,
+        maxblur 	: 3.0,
+        showFocus 	: false,
+        focalDepth 	: 6.0,
+        manualdof 	: false,
+        vignetting 	: false,
+        depthblur 	: false,
+
+        threshold 	: 0.5,
+        gain 		: 0.1,
+        bias 		: 0.5,
+        fringe		: 0.7,
+
+        focalLength	: 35,
+        noise		: false,
+        pentagon	: false,
+
+        dithering	: 0.00001
+    };
+
+    function init() {
+
+        inputWrap = document.getElementById('input-wrap');
+        input = document.getElementById('text');
+        execute = document.getElementById('execute');
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0x000000 );
+        scene.fog = new THREE.Fog( 0x000000, 0.1, 100);
+
+        camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 100);
+        camera.position.set(0, 0, 100);
+        camera.focus = 0.1;
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+        //controls = new OrbitControls( camera );
+
+        material_depth = new THREE.MeshDepthMaterial();
+
+        group = new THREE.Group();
+
+        light = new THREE.DirectionalLight( 0xFFFFFF, 0.75 );
+        light.castShadow = true;
+        light.position.set( -2, 25, 10);
+        group.add( light );
+
+        let loader = new THREE.FontLoader();
+
+        loader.load( 'font/futura.json', function ( response ) {
+
+            font = response;
+            createText();
+
+        } );
+
+        initPostProcessing();
+
+        // Setting up the DoF parameters to bokeh shader
+        for( let e in bokeh_params ) {
+            if( e in postprocessing.bokeh_uniforms )
+                postprocessing.bokeh_uniforms[e].value = bokeh_params[e];
+        }
+        postprocessing.enabled = true;
+        postprocessing.bokeh_uniforms["znear"].value 	= camera.near;
+        postprocessing.bokeh_uniforms["zfar"].value 	= camera.far;
+        camera.setFocalLength( bokeh_params.focalLength );
+
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setClearColor( 0x000000, 1.0 );
+        renderer.setSize(renderWidth, renderHeight);
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.gammaInput  = true;
+        renderer.gammaOutput = true;
+
+        document.body.appendChild(renderer.domElement);
+
+        window.addEventListener('resize', onWindowResize, false);
+
+        input.addEventListener('keydown', function(event) {
+            if (event.keyCode === 13) {
+                createText( input.value );
+                return true;
+            }
+        }, false);
+
+        execute.addEventListener('click', function() {
+            console.log(input.value);
+            createText( input.value );
+        }, false);
+
+        input.focus();
+
+    }
+
+    function initPostProcessing() {
+        postprocessing.scene  = new THREE.Scene();
+        postprocessing.camera = new THREE.OrthographicCamera( -window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, -10, 10 );
+
+        postprocessing.scene.add( postprocessing.camera );
+
+        /* Rendering to color and depth textures */
+        var params = {
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format   : THREE.RGBFormat
+        };
+
+        /* Preparing the frame buffers to be rendered to */
+        postprocessing.rtTextureDepth = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, params );
+        postprocessing.rtTextureColor = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, params );
+
+        var bokeh_shader = THREE.BokehShader;
+        postprocessing.bokeh_uniforms = THREE.UniformsUtils.clone( bokeh_shader.uniforms );
+        postprocessing.bokeh_uniforms["tColor"].value = postprocessing.rtTextureColor;
+        postprocessing.bokeh_uniforms["tDepth"].value = postprocessing.rtTextureDepth;
+
+        postprocessing.bokeh_uniforms["textureWidth" ].value = window.innerWidth;
+        postprocessing.bokeh_uniforms["textureHeight"].value = window.innerHeight;
+
+        postprocessing.materialBokeh = new THREE.ShaderMaterial( {
+            uniforms 		: postprocessing.bokeh_uniforms,
+            vertexShader 	: bokeh_shader.vertexShader,
+            fragmentShader 	: bokeh_shader.fragmentShader,
+            defines: {
+                RINGS	: 2,
+                SAMPLES	: 8
+            }
+        } );
+
+        postprocessing.quad = new THREE.Mesh( new THREE.PlaneGeometry( window.innerWidth, window.innerHeight ), postprocessing.materialBokeh );
+        postprocessing.scene.add( postprocessing.quad );
+    }
+
+    function onWindowResize() {
+
+        renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+        renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+
+        camera.aspect = renderWidth / renderHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(renderWidth, renderHeight);
+    }
+
+    function createText( textVal = 'LOST' ) {
+
+        group.remove( text );
+
+        if( textVal === '' ) {
+            textVal = '4 8 15 16 23 42';
+        }
+        textVal = textVal.split('').join(' ');
+
+        textGeom = new THREE.TextGeometry( textVal, {
+            font: font,
+            size: 5,
+            height: 0.5,
+            curveSegments: 100,
+        } );
+
+        textGeom.center();
+
+        textMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+        text = new THREE.Mesh( textGeom, textMat );
+        text.receiveShadow = true;
+        text.position.set( 0, 0, 0 );
+        group.add( text );
+
+        scene.add( group );
+
+        if( typeof timeline !== 'undefined' ) {
+            timeline.kill();
+        }
+
+        createAnimation();
+
+    }
+
+    function createAnimation() {
+
+        timeline = new TimelineLite();
+
+        timeline.fromTo( group.position, 6, {
+            z: 0
+        }, {
+            z: 70,
+            ease: 'Linear.easeIn'
+        }, 0);
+
+        timeline.fromTo( group.rotation, 10, {
+            z: 0.6,
+            y: -1.2,
+            x: -0.5
+        }, {
+            z: -0.4,
+            y: -0.2,
+            x: -0.3,
+            ease: 'Linear.easeInOut'
+        }, 0);
+
+        timeline.to( group.position, 4, {
+            z: 101,
+            ease: 'Linear.easeIn'
+        }, 5.7);
+
+        timeline.fromTo( group.position, 6, {
+            y: 0,
+            x: 0
+        }, {
+            y: -2,
+            x: -1,
+            ease: 'Power2.easeInOut'
+        }, 5.7);
+
+    }
+
+    function render() {
+
+        //controls.update();
+
+        renderer.clear();
+        scene.overrideMaterial = null;
+        renderer.render( scene, camera, postprocessing.rtTextureColor, true );
+
+        scene.overrideMaterial = material_depth;
+        renderer.render( scene, camera, postprocessing.rtTextureDepth, true );
+
+        /* Then render them using the depth of field postprocessing scene */
+        renderer.render( postprocessing.scene, postprocessing.camera );
+
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        render();
+    }
+
+    /**
+     * @author zz85 / https://github.com/zz85 | twitter.com/blurspline
+     *
+     * Depth-of-field shader with bokeh
+     * ported from GLSL shader by Martins Upitis
+     * http://blenderartists.org/forum/showthread.php?237488-GLSL-depth-of-field-with-bokeh-v2-4-(update)
+     *
+     * Requires #define RINGS and SAMPLES integers
+     */
+
     THREE.BokehShader = {
 
         uniforms: {
@@ -371,231 +631,9 @@ const lostIntro = function() {
 
     };
 
-    let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
-        renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
-        scene, camera, renderer, controls,
-        group,
-        textGeom, textMat, text,
-        light,
-        material_depth,
-        composer;
-
-    let postprocessing = {};
-    let bokeh_params = {
-        shaderFocus	: false,
-        fstop 		: 2.6 * 2,
-        maxblur 	: 3.0,
-        showFocus 	: false,
-        focalDepth 	: 6.0,
-        manualdof 	: false,
-        vignetting 	: false,
-        depthblur 	: false,
-
-        threshold 	: 0.5,
-        gain 		: 0.1,
-        bias 		: 0.5,
-        fringe		: 0.7,
-
-        focalLength	: 35,
-        noise		: false,
-        pentagon	: false,
-
-        dithering	: 0.00001
-    };
-
     init();
     animate();
-
-    function init() {
-
-        scene = new THREE.Scene();
-        scene.background = new THREE.Color( 0x000000 );
-        scene.fog = new THREE.Fog( 0x000000, 0.1, 100);
-
-        camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 100);
-        camera.position.set(0, 0, 100);
-        camera.focus = 0.1;
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-        controls = new OrbitControls( camera );
-
-        material_depth = new THREE.MeshDepthMaterial();
-
-        group = new THREE.Group();
-
-        light = new THREE.DirectionalLight( 0xFFFFFF, 0.8 );
-        light.castShadow = true;
-        light.position.set( -2, -5, 20);
-        group.add( light );
-
-        let loader = new THREE.FontLoader();
-
-        loader.load( 'font/futura.json', function ( font ) {
-
-            textGeom = new THREE.TextGeometry( 'L O S T', {
-                font: font,
-                size: 5,
-                height: 0.5,
-                curveSegments: 100,
-            } );
-
-            textGeom.center();
-
-            textMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
-            text = new THREE.Mesh( textGeom, textMat );
-            text.receiveShadow = true;
-            text.position.set( 0, 0, 0 );
-            group.add( text );
-
-            scene.add( group );
-
-            createAnimation();
-
-        } );
-
-        initPostProcessing();
-
-        /* Setting up the DoF parameters to bokeh shader */
-        for( let e in bokeh_params ) {
-            if( e in postprocessing.bokeh_uniforms )
-                postprocessing.bokeh_uniforms[e].value = bokeh_params[e];
-        }
-        postprocessing.enabled = true;
-        postprocessing.bokeh_uniforms["znear"].value 	= camera.near;
-        postprocessing.bokeh_uniforms["zfar"].value 	= camera.far;
-        camera.setFocalLength( bokeh_params.focalLength );
-
-        renderer = new THREE.WebGLRenderer({antialias: true});
-        renderer.setClearColor( 0x000000, 1.0 );
-        renderer.setSize(renderWidth, renderHeight);
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.gammaInput  = true;
-        renderer.gammaOutput = true;
-
-        document.body.appendChild(renderer.domElement);
-
-        window.addEventListener('resize', onWindowResize, false);
-
-    }
-
-    function initPostProcessing() {
-        postprocessing.scene  = new THREE.Scene();
-        postprocessing.camera = new THREE.OrthographicCamera( -window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, -10, 10 );
-
-        postprocessing.scene.add( postprocessing.camera );
-
-        /* Rendering to color and depth textures */
-        var params = {
-            minFilter: THREE.LinearFilter,
-            magFilter: THREE.LinearFilter,
-            format   : THREE.RGBFormat
-        };
-
-        /* Preparing the frame buffers to be rendered to */
-        postprocessing.rtTextureDepth = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, params );
-        postprocessing.rtTextureColor = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, params );
-
-        var bokeh_shader = THREE.BokehShader;
-        postprocessing.bokeh_uniforms = THREE.UniformsUtils.clone( bokeh_shader.uniforms );
-        postprocessing.bokeh_uniforms["tColor"].value = postprocessing.rtTextureColor;
-        postprocessing.bokeh_uniforms["tDepth"].value = postprocessing.rtTextureDepth;
-
-        postprocessing.bokeh_uniforms["textureWidth" ].value = window.innerWidth;
-        postprocessing.bokeh_uniforms["textureHeight"].value = window.innerHeight;
-
-        postprocessing.materialBokeh = new THREE.ShaderMaterial( {
-            uniforms 		: postprocessing.bokeh_uniforms,
-            vertexShader 	: bokeh_shader.vertexShader,
-            fragmentShader 	: bokeh_shader.fragmentShader,
-            defines: {
-                RINGS	: 2,
-                SAMPLES	: 10
-            }
-        } );
-
-        postprocessing.quad = new THREE.Mesh( new THREE.PlaneGeometry( window.innerWidth, window.innerHeight ), postprocessing.materialBokeh );
-        postprocessing.scene.add( postprocessing.quad );
-    }
-
-    function onWindowResize() {
-
-        renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
-        renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
-
-        camera.aspect = renderWidth / renderHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(renderWidth, renderHeight);
-    }
-
-    function createAnimation() {
-
-        const timeline = new TimelineLite();
-
-        timeline.fromTo( group.position, 10,
-        {
-            z: 0
-        },
-        {
-            z: 101
-        }, 0);
-
-        timeline.fromTo( group.rotation, 10,
-        {
-            z: 0.6,
-            y: -1.2,
-            x: -0.5
-        },
-        {
-            z: -0.4,
-            y: -0.2,
-            x: -0.3
-        }, 0);
-
-        timeline.fromTo( group.position, 5,
-        {
-            y: 0,
-            x: 0
-        },
-        {
-            y: -2,
-            x: -1,
-            ease: 'Power2.easeInOut'
-        }, 4);
-
-    }
-
-    function render() {
-
-        controls.update();
-        //renderer.render( scene, camera );
-
-        renderer.clear();
-        scene.overrideMaterial = null;
-        renderer.render( scene, camera, postprocessing.rtTextureColor, true );
-
-        scene.overrideMaterial = material_depth;
-        renderer.render( scene, camera, postprocessing.rtTextureDepth, true );
-
-        /* Then render them using the depth of field postprocessing scene */
-        renderer.render( postprocessing.scene, postprocessing.camera );
-
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-        render();
-    }
 
 };
 
 lostIntro();
-
-/**
- * @author zz85 / https://github.com/zz85 | twitter.com/blurspline
- *
- * Depth-of-field shader with bokeh
- * ported from GLSL shader by Martins Upitis
- * http://blenderartists.org/forum/showthread.php?237488-GLSL-depth-of-field-with-bokeh-v2-4-(update)
- *
- * Requires #define RINGS and SAMPLES integers
- */
