@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import OrbitControls from 'three-orbitcontrols';
+import { TimelineLite } from 'gsap';
 
 const lostIntro = function() {
 
@@ -373,6 +374,7 @@ const lostIntro = function() {
     let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
         renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
         scene, camera, renderer, controls,
+        group,
         textGeom, textMat, text,
         light,
         material_depth,
@@ -411,7 +413,7 @@ const lostIntro = function() {
         scene.fog = new THREE.Fog( 0x000000, 0.1, 100);
 
         camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 100);
-        camera.position.set(0, -5, 20);
+        camera.position.set(0, 0, 100);
         camera.focus = 0.1;
         camera.lookAt(new THREE.Vector3(0, 0, 0));
 
@@ -419,15 +421,22 @@ const lostIntro = function() {
 
         material_depth = new THREE.MeshDepthMaterial();
 
+        group = new THREE.Group();
+
+        light = new THREE.DirectionalLight( 0xFFFFFF, 0.8 );
+        light.castShadow = true;
+        light.position.set( -2, -5, 20);
+        group.add( light );
+
         let loader = new THREE.FontLoader();
 
         loader.load( 'font/futura.json', function ( font ) {
 
-            textGeom = new THREE.TextGeometry( 'F U C K  Y O U', {
+            textGeom = new THREE.TextGeometry( 'L O S T', {
                 font: font,
                 size: 5,
                 height: 0.5,
-                curveSegments: 40,
+                curveSegments: 100,
             } );
 
             textGeom.center();
@@ -436,14 +445,13 @@ const lostIntro = function() {
             text = new THREE.Mesh( textGeom, textMat );
             text.receiveShadow = true;
             text.position.set( 0, 0, 0 );
-            scene.add( text );
+            group.add( text );
+
+            scene.add( group );
+
+            createAnimation();
 
         } );
-
-        light = new THREE.DirectionalLight( 0xFFFFFF, 0.8 );
-        light.castShadow = true;
-        light.position.set( -2, -5, 20);
-        scene.add( light );
 
         initPostProcessing();
 
@@ -501,7 +509,7 @@ const lostIntro = function() {
             fragmentShader 	: bokeh_shader.fragmentShader,
             defines: {
                 RINGS	: 2,
-                SAMPLES	: 6
+                SAMPLES	: 10
             }
         } );
 
@@ -517,6 +525,43 @@ const lostIntro = function() {
         camera.aspect = renderWidth / renderHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(renderWidth, renderHeight);
+    }
+
+    function createAnimation() {
+
+        const timeline = new TimelineLite();
+
+        timeline.fromTo( group.position, 10,
+        {
+            z: 0
+        },
+        {
+            z: 101
+        }, 0);
+
+        timeline.fromTo( group.rotation, 10,
+        {
+            z: 0.6,
+            y: -1.2,
+            x: -0.5
+        },
+        {
+            z: -0.4,
+            y: -0.2,
+            x: -0.3
+        }, 0);
+
+        timeline.fromTo( group.position, 5,
+        {
+            y: 0,
+            x: 0
+        },
+        {
+            y: -2,
+            x: -1,
+            ease: 'Power2.easeInOut'
+        }, 4);
+
     }
 
     function render() {
