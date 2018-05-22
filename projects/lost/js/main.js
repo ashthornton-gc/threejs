@@ -46,7 +46,7 @@ const lostIntro = function() {
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0x000000 );
-        scene.fog = new THREE.Fog( 0x000000, 0.1, 100);
+        //scene.fog = new THREE.Fog( 0x000000, 0.1, 100);
 
         camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 100);
         camera.position.set(0, 0, 100);
@@ -61,8 +61,9 @@ const lostIntro = function() {
 
         light = new THREE.DirectionalLight( 0xFFFFFF, 0.75 );
         light.castShadow = true;
-        light.position.set( -2, 25, 10);
+        light.position.set( -9, -3, 5);
         group.add( light );
+        group.add( new THREE.AmbientLight( 0xEEEEEE, 0.002 ) );
 
         let loader = new THREE.FontLoader();
 
@@ -173,13 +174,13 @@ const lostIntro = function() {
         textGeom = new THREE.TextGeometry( textVal, {
             font: font,
             size: 5,
-            height: 0.5,
+            height: 0.75,
             curveSegments: 100,
         } );
 
         textGeom.center();
 
-        textMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+        textMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, transparent: true });
         text = new THREE.Mesh( textGeom, textMat );
         text.receiveShadow = true;
         text.position.set( 0, 0, 0 );
@@ -199,37 +200,40 @@ const lostIntro = function() {
 
         timeline = new TimelineLite();
 
-        timeline.fromTo( group.position, 6, {
-            z: 0
+        timeline.fromTo( textMat, 1.5, {
+            opacity: 0
         }, {
-            z: 70,
+            opacity: 1,
+            ease: 'Power2.easeOut'
+        }, 0);
+
+        timeline.fromTo( camera.position, 6, {
+            z: 101
+        }, {
+            z: 30,
             ease: 'Linear.easeIn'
         }, 0);
 
-        timeline.fromTo( group.rotation, 10, {
-            z: 0.6,
-            y: -1.2,
-            x: -0.5
-        }, {
+        timeline.fromTo( camera.rotation, 6, {
             z: -0.4,
-            y: -0.2,
-            x: -0.3,
+        }, {
+            z: 0.5,
             ease: 'Linear.easeInOut'
         }, 0);
 
-        timeline.to( group.position, 4, {
-            z: 101,
-            ease: 'Linear.easeIn'
-        }, 5.7);
-
-        timeline.fromTo( group.position, 6, {
-            y: 0,
-            x: 0
-        }, {
-            y: -2,
-            x: -1,
-            ease: 'Power2.easeInOut'
-        }, 5.7);
+        //timeline.to( camera.position, 4, {
+        //    z: 101,
+        //    ease: 'Linear.easeIn'
+        //}, 5.7);
+        //
+        //timeline.fromTo( camera.position, 6, {
+        //    y: 0,
+        //    x: 0
+        //}, {
+        //    y: -2,
+        //    x: -1,
+        //    ease: 'Power2.easeInOut'
+        //}, 5.7);
 
     }
 
