@@ -1,59 +1,64 @@
 import * as THREE from 'three';
-import OrbitControls from 'three-orbitcontrols';
 import { TimelineLite } from 'gsap';
+import dat from 'dat.gui';
 
 const lostIntro = function() {
 
     let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
         renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
-        scene, camera, renderer, controls,
+        scene, camera, renderer,
         group,
-        timeline,
+        timeline, timelineController,
         font,
         textGeom, textMat, text,
         light,
         material_depth,
-        inputWrap, input, execute;
+        input, execute,
+        effectController, shaderSettings;
 
     let postprocessing = {};
-    let bokeh_params = {
-        shaderFocus	: false,
-        fstop 		: 2.6 * 2,
-        maxblur 	: 3.0,
-        showFocus 	: false,
-        focalDepth 	: 6.0,
-        manualdof 	: false,
-        vignetting 	: false,
-        depthblur 	: false,
 
-        threshold 	: 0.5,
-        gain 		: 0.1,
-        bias 		: 0.5,
-        fringe		: 0.7,
+    effectController  = {
+        enabled: true,
+        shaderFocus: false,
+        fstop: 2.6 * 2,
+        maxblur: 3.0,
+        showFocus: false,
+        focalDepth: 6.0,
+        manualdof: false,
+        vignetting: false,
+        depthblur: false,
+        threshold: 0.5,
+        gain: 0.1,
+        bias: 0.5,
+        fringe: 0.7,
+        focalLength: 35,
+        noise: false,
+        pentagon: false,
+        dithering: 0.00001
+    };
 
-        focalLength	: 35,
-        noise		: false,
-        pentagon	: false,
+    shaderSettings = {
+        rings: 4,
+        samples: 5
+    };
 
-        dithering	: 0.00001
+    timelineController = {
+        progress: 0
     };
 
     function init() {
 
-        inputWrap = document.getElementById('input-wrap');
         input = document.getElementById('text');
         execute = document.getElementById('execute');
 
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0x000000 );
-        //scene.fog = new THREE.Fog( 0x000000, 0.1, 100);
 
-        camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 100);
+        camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 110);
         camera.position.set(0, 0, 100);
         camera.focus = 0.1;
         camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-        //controls = new OrbitControls( camera );
 
         material_depth = new THREE.MeshDepthMaterial();
 
@@ -75,16 +80,7 @@ const lostIntro = function() {
         } );
 
         initPostProcessing();
-
-        // Setting up the DoF parameters to bokeh shader
-        for( let e in bokeh_params ) {
-            if( e in postprocessing.bokeh_uniforms )
-                postprocessing.bokeh_uniforms[e].value = bokeh_params[e];
-        }
-        postprocessing.enabled = true;
-        postprocessing.bokeh_uniforms["znear"].value 	= camera.near;
-        postprocessing.bokeh_uniforms["zfar"].value 	= camera.far;
-        camera.setFocalLength( bokeh_params.focalLength );
+        createGui();
 
         renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setClearColor( 0x000000, 1.0 );
@@ -114,42 +110,39 @@ const lostIntro = function() {
     }
 
     function initPostProcessing() {
+
         postprocessing.scene  = new THREE.Scene();
         postprocessing.camera = new THREE.OrthographicCamera( -window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, -10, 10 );
-
         postprocessing.scene.add( postprocessing.camera );
 
-        /* Rendering to color and depth textures */
-        var params = {
+        let params = {
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
             format   : THREE.RGBFormat
         };
 
-        /* Preparing the frame buffers to be rendered to */
         postprocessing.rtTextureDepth = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, params );
         postprocessing.rtTextureColor = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, params );
 
-        var bokeh_shader = THREE.BokehShader;
+        let bokeh_shader = THREE.BokehShader;
         postprocessing.bokeh_uniforms = THREE.UniformsUtils.clone( bokeh_shader.uniforms );
         postprocessing.bokeh_uniforms["tColor"].value = postprocessing.rtTextureColor;
         postprocessing.bokeh_uniforms["tDepth"].value = postprocessing.rtTextureDepth;
-
         postprocessing.bokeh_uniforms["textureWidth" ].value = window.innerWidth;
         postprocessing.bokeh_uniforms["textureHeight"].value = window.innerHeight;
-
         postprocessing.materialBokeh = new THREE.ShaderMaterial( {
             uniforms 		: postprocessing.bokeh_uniforms,
             vertexShader 	: bokeh_shader.vertexShader,
             fragmentShader 	: bokeh_shader.fragmentShader,
             defines: {
-                RINGS	: 2,
-                SAMPLES	: 8
+                RINGS: shaderSettings.rings,
+                SAMPLES: shaderSettings.samples,
             }
         } );
 
         postprocessing.quad = new THREE.Mesh( new THREE.PlaneGeometry( window.innerWidth, window.innerHeight ), postprocessing.materialBokeh );
         postprocessing.scene.add( postprocessing.quad );
+
     }
 
     function onWindowResize() {
@@ -198,7 +191,11 @@ const lostIntro = function() {
 
     function createAnimation() {
 
-        timeline = new TimelineLite();
+        timeline = new TimelineLite({
+            onUpdate: function() {
+                timelineController.progress = timeline.progress();
+            }
+        });
 
         timeline.fromTo( textMat, 1.5, {
             opacity: 0
@@ -207,49 +204,116 @@ const lostIntro = function() {
             ease: 'Power2.easeOut'
         }, 0);
 
-        timeline.fromTo( camera.position, 6, {
-            z: 101
+        timeline.fromTo( text.position, 6, {
+            z: 0
         }, {
-            z: 30,
+            z: 70,
             ease: 'Linear.easeIn'
         }, 0);
 
-        timeline.fromTo( camera.rotation, 6, {
-            z: -0.4,
+        timeline.fromTo( text.rotation, 10, {
+            z: 0.6,
+            y: -1.2,
+            x: -0.5
         }, {
-            z: 0.5,
+            z: -0.4,
+            y: -0.2,
+            x: -0.3,
             ease: 'Linear.easeInOut'
         }, 0);
 
-        //timeline.to( camera.position, 4, {
-        //    z: 101,
-        //    ease: 'Linear.easeIn'
-        //}, 5.7);
-        //
-        //timeline.fromTo( camera.position, 6, {
-        //    y: 0,
-        //    x: 0
-        //}, {
-        //    y: -2,
-        //    x: -1,
-        //    ease: 'Power2.easeInOut'
-        //}, 5.7);
+        timeline.to( text.position, 4, {
+            z: 101,
+            ease: 'Linear.easeIn'
+        }, 5.7);
 
+        timeline.fromTo( text.position, 6, {
+            y: 0,
+            x: 0
+        }, {
+            y: -2,
+            x: -1,
+            ease: 'Power2.easeInOut'
+        }, 5.7);
+
+    }
+
+    function createGui() {
+
+        let matChanger = function() {
+            for ( let e in effectController ) {
+                if ( e in postprocessing.bokeh_uniforms ) {
+                    postprocessing.bokeh_uniforms[ e ].value = effectController[ e ];
+                }
+            }
+            postprocessing.enabled = effectController.enabled;
+            postprocessing.bokeh_uniforms[ 'znear' ].value = camera.near;
+            postprocessing.bokeh_uniforms[ 'zfar' ].value = camera.far;
+            camera.setFocalLength(effectController.focalLength);
+        };
+
+        let gui = new dat.GUI();
+        let effectFolder = gui.addFolder('Depth Of Field');
+        effectFolder.add( effectController, 'enabled' ).onChange( matChanger );
+        effectFolder.add( effectController, 'shaderFocus' ).onChange( matChanger );
+        effectFolder.add( effectController, 'focalDepth', 0.0, 200.0 ).listen().onChange( matChanger );
+        effectFolder.add( effectController, 'fstop', 0.1, 22, 0.001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'maxblur', 0.0, 5.0, 0.025 ).onChange( matChanger );
+        effectFolder.add( effectController, 'showFocus' ).onChange( matChanger );
+        effectFolder.add( effectController, 'manualdof' ).onChange( matChanger );
+        effectFolder.add( effectController, 'vignetting' ).onChange( matChanger );
+        effectFolder.add( effectController, 'depthblur' ).onChange( matChanger );
+        effectFolder.add( effectController, 'threshold', 0, 1, 0.001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'gain', 0, 100, 0.001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'bias', 0,3, 0.001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'fringe', 0, 5, 0.001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'focalLength', 16, 80, 0.001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'noise' ).onChange( matChanger );
+        effectFolder.add( effectController, 'dithering', 0, 0.001, 0.0001 ).onChange( matChanger );
+        effectFolder.add( effectController, 'pentagon' ).onChange( matChanger );
+        effectFolder.add( shaderSettings, 'rings', 1, 8).step(1).onChange( shaderUpdate );
+        effectFolder.add( shaderSettings, 'samples', 1, 13).step(1).onChange( shaderUpdate );
+
+        let animationFolder = gui.addFolder('Animation');
+
+        animationFolder.add( { play: function() { timeline.play() } }, 'play' );
+        animationFolder.add( { pause: function() { timeline.pause() } }, 'pause' );
+        animationFolder.add( { restart: function() { timeline.kill(); createAnimation(); } }, 'restart' );
+        animationFolder.add( timelineController, 'progress', 0, 1).step(0.01).onChange( function( val ) {
+            timeline.progress( val );
+        } );
+
+        gui.close();
+
+        matChanger();
+
+    }
+
+    function shaderUpdate() {
+        postprocessing.materialBokeh.defines.RINGS = shaderSettings.rings;
+        postprocessing.materialBokeh.defines.SAMPLES = shaderSettings.samples;
+        postprocessing.materialBokeh.needsUpdate = true;
     }
 
     function render() {
 
-        //controls.update();
+        if ( postprocessing.enabled ) {
 
-        renderer.clear();
-        scene.overrideMaterial = null;
-        renderer.render( scene, camera, postprocessing.rtTextureColor, true );
+            renderer.clear();
+            scene.overrideMaterial = null;
+            renderer.render(scene, camera, postprocessing.rtTextureColor, true);
+            scene.overrideMaterial = material_depth;
+            renderer.render(scene, camera, postprocessing.rtTextureDepth, true);
 
-        scene.overrideMaterial = material_depth;
-        renderer.render( scene, camera, postprocessing.rtTextureDepth, true );
+            renderer.render(postprocessing.scene, postprocessing.camera);
 
-        /* Then render them using the depth of field postprocessing scene */
-        renderer.render( postprocessing.scene, postprocessing.camera );
+        } else {
+
+            scene.overrideMaterial = null;
+            renderer.clear();
+            renderer.render( scene, camera );
+
+        }
 
     }
 
