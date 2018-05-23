@@ -7,7 +7,7 @@ const lostIntro = function() {
     let renderWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0),
         renderHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0),
         scene, camera, renderer,
-        group,
+        group, textGroup,
         timeline, timelineController,
         font,
         textGeom, textMat, text,
@@ -22,9 +22,9 @@ const lostIntro = function() {
         enabled: true,
         shaderFocus: false,
         fstop: 2.6 * 2,
-        maxblur: 3.0,
+        maxblur: 3.65,
         showFocus: false,
-        focalDepth: 6.0,
+        focalDepth: 7.5,
         manualdof: false,
         vignetting: false,
         depthblur: false,
@@ -39,8 +39,8 @@ const lostIntro = function() {
     };
 
     shaderSettings = {
-        rings: 4,
-        samples: 5
+        rings: 3,
+        samples: 4
     };
 
     timelineController = {
@@ -63,6 +63,7 @@ const lostIntro = function() {
         material_depth = new THREE.MeshDepthMaterial();
 
         group = new THREE.Group();
+        textGroup = new THREE.Group();
 
         light = new THREE.DirectionalLight( 0xFFFFFF, 0.75 );
         light.castShadow = true;
@@ -157,28 +158,40 @@ const lostIntro = function() {
 
     function createText( textVal = 'LOST' ) {
 
-        group.remove( text );
+        for (let i = textGroup.children.length - 1; i >= 0; i--) {
+            textGroup.remove(textGroup.children[i]);
+        }
+        group.remove( textGroup );
 
         if( textVal === '' ) {
-            textVal = '4 8 15 16 23 42';
+            textVal = '4 8 15  16 23 42';
         }
-        textVal = textVal.split('').join(' ');
 
-        textGeom = new THREE.TextGeometry( textVal, {
-            font: font,
-            size: 5,
-            height: 0.75,
-            curveSegments: 100,
-        } );
-
-        textGeom.center();
+        let textLines = textVal.split('  ');
+        let count = 0;
 
         textMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF, transparent: true });
-        text = new THREE.Mesh( textGeom, textMat );
-        text.receiveShadow = true;
-        text.position.set( 0, 0, 0 );
-        group.add( text );
 
+        textLines.forEach( ( v, i ) => {
+
+            textGeom = new THREE.TextGeometry( textLines[i].split('').join(' '), {
+                font: font,
+                size: 5,
+                height: 0.75,
+                curveSegments: 100,
+            } );
+
+            textGeom.center();
+            text = new THREE.Mesh( textGeom, textMat );
+            text.receiveShadow = true;
+            text.position.set( 0, count, 0 );
+            textGroup.add( text );
+
+            count += -8;
+
+        });
+
+        group.add( textGroup );
         scene.add( group );
 
         if( typeof timeline !== 'undefined' ) {
@@ -204,16 +217,16 @@ const lostIntro = function() {
             ease: 'Power2.easeOut'
         }, 0);
 
-        timeline.fromTo( text.position, 6, {
+        timeline.fromTo( textGroup.position, 6, {
             z: 0
         }, {
             z: 70,
             ease: 'Linear.easeIn'
         }, 0);
 
-        timeline.fromTo( text.rotation, 10, {
-            z: 0.6,
-            y: -1.2,
+        timeline.fromTo( textGroup.rotation, 10, {
+            z: 0.5,
+            y: -1.0,
             x: -0.5
         }, {
             z: -0.4,
@@ -222,12 +235,12 @@ const lostIntro = function() {
             ease: 'Linear.easeInOut'
         }, 0);
 
-        timeline.to( text.position, 4, {
+        timeline.to( textGroup.position, 4, {
             z: 101,
             ease: 'Linear.easeIn'
         }, 5.7);
 
-        timeline.fromTo( text.position, 6, {
+        timeline.fromTo( textGroup.position, 6, {
             y: 0,
             x: 0
         }, {
