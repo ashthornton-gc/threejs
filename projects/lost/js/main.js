@@ -55,7 +55,7 @@ const lostIntro = function() {
         scene = new THREE.Scene();
         scene.background = new THREE.Color( 0x000000 );
 
-        camera = new THREE.PerspectiveCamera(50, renderWidth / renderHeight, 1, 110);
+        camera = new THREE.PerspectiveCamera(100, renderWidth / renderHeight, 1, 110);
         camera.position.set(0, 0, 100);
         camera.focus = 0.1;
         camera.lookAt(new THREE.Vector3(0, 0, 0));
@@ -229,8 +229,8 @@ const lostIntro = function() {
             y: -1.0,
             x: -0.5
         }, {
-            z: -0.4,
-            y: -0.2,
+            z: -0.8,
+            y: 0.2,
             x: -0.3,
             ease: 'Linear.easeInOut'
         }, 0);
