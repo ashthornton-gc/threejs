@@ -40,7 +40,7 @@ const lostIntro = function() {
 
     shaderSettings = {
         rings: 3,
-        samples: 4
+        samples: 3
     };
 
     timelineController = {
