@@ -10,7 +10,7 @@ const cabin = function() {
         light,
         layer1, layer1tex, layer1mat,
         layer2, layer2tex, layer2mat,
-        layer3, layer3tex, layer3mat,
+        cabin, cabinGeo1, cabinGeo2, cabinMesh1, cabinMesh2,
         water;
 
     function init() {
@@ -62,7 +62,7 @@ const cabin = function() {
         layer1mat = new THREE.MeshBasicMaterial({ map : layer1tex });
         layer1 = new THREE.Mesh(new THREE.PlaneGeometry(512, 234), layer1mat);
         layer1.position.set(0, 100, -256);
-        layer1.renderOrder = 997;
+        layer1.renderOrder = 996;
         layer1.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
 
         scene.add( layer1 );
@@ -72,20 +72,48 @@ const cabin = function() {
         layer2mat = new THREE.MeshBasicMaterial({ map : layer2tex, transparent: true });
         layer2 = new THREE.Mesh(new THREE.PlaneGeometry(512, 234), layer2mat);
         layer2.position.set(0, 100, -255);
-        layer2.renderOrder = 998;
+        layer2.renderOrder = 997;
         layer2.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
 
         scene.add( layer2 );
 
         // top layer
-        layer3tex = new THREE.TextureLoader().load( 'img/layer3b.png' );
-        layer3mat = new THREE.MeshBasicMaterial({ map : layer3tex, transparent: true });
-        layer3 = new THREE.Mesh(new THREE.PlaneGeometry(512, 320), layer3mat);
-        layer3.position.set(0, 120, -200);
-        layer3.renderOrder = 999;
-        layer3.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
+        // layer3tex = new THREE.TextureLoader().load( 'img/layer3b.png' );
+        // layer3mat = new THREE.MeshBasicMaterial({ map : layer3tex, transparent: true });
+        // layer3 = new THREE.Mesh(new THREE.PlaneGeometry(512, 320), layer3mat);
+        // layer3.position.set(0, 120, -200);
+        // layer3.renderOrder = 999;
+        // layer3.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
 
-        scene.add( layer3 );
+        // scene.add( layer3 );
+
+        let layer3Mats = [
+            new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load( 'img/layer3-1.png' ), transparent: true }),
+            new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load( 'img/layer3-2.png' ), transparent: true }),
+        ];
+
+        cabin = new THREE.Group();
+
+        cabinGeo1 = new THREE.PlaneGeometry(150, 100);
+        cabinMesh1 = new THREE.Mesh( cabinGeo1, layer3Mats[0] );
+        cabinMesh1.rotation.set(0, -0.77, 0);
+        cabinMesh1.position.set(-65, -12, -6);
+        cabinMesh1.renderOrder = 999;
+        cabinMesh1.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
+
+        cabinGeo2 = new THREE.PlaneGeometry(223, 100);
+        cabinMesh2 = new THREE.Mesh( cabinGeo2, layer3Mats[1] );
+        cabinMesh2.rotation.set(0, 0.22, 0);
+        cabinMesh2.position.set(98, -20, 25);
+        cabinMesh2.renderOrder = 999;
+        cabinMesh2.onBeforeRender = function( renderer ) { renderer.clearDepth(); };
+
+        cabin.add( cabinMesh1 );
+        cabin.add( cabinMesh2 );
+
+        cabin.position.set(0, 50, -170);
+
+        scene.add( cabin );
 
         document.body.appendChild(renderer.domElement);
 
@@ -104,7 +132,33 @@ const cabin = function() {
         folder.add( uniforms.alpha, 'value', 0.9, 1, .001 ).name( 'alpha' );
         folder.open();
 
+        let cabin1 = gui.addFolder( 'Cabin Left' );
+        cabin1.add( cabinMesh1.rotation, 'x', -1, 1, 0.01 ).name( 'rx' );
+        cabin1.add( cabinMesh1.rotation, 'y', -1, 1, 0.01 ).name( 'ry' );
+        cabin1.add( cabinMesh1.rotation, 'z', -1, 1, 0.01 ).name( 'rz' );
+        cabin1.add( cabinMesh1.position, 'x', -100, 100, 1 ).name( 'px' );
+        cabin1.add( cabinMesh1.position, 'y', -100, 100, 1 ).name( 'py' );
+        cabin1.add( cabinMesh1.position, 'z', -100, 100, 1 ).name( 'pz' );
+        cabin1.open();
+
+        let cabin2 = gui.addFolder( 'Cabin Right' );
+        cabin2.add( cabinMesh2.rotation, 'x', -1, 1, 0.01 ).name( 'rx' );
+        cabin2.add( cabinMesh2.rotation, 'y', -1, 1, 0.01 ).name( 'ry' );
+        cabin2.add( cabinMesh2.rotation, 'z', -1, 1, 0.01 ).name( 'rz' );
+        cabin2.add( cabinMesh2.position, 'x', -100, 100, 1 ).name( 'px' );
+        cabin2.add( cabinMesh2.position, 'y', -100, 100, 1 ).name( 'py' );
+        cabin2.add( cabinMesh2.position, 'z', -100, 100, 1 ).name( 'pz' );
+        cabin2.open();
+
         gui.close();
+
+        document.getElementsByClassName('main')[0].addEventListener('mouseenter', function() {
+            controls.enabled = false;
+        }, false);
+
+        document.getElementsByClassName('main')[0].addEventListener('mouseleave', function() {
+            controls.enabled = true;
+        }, false);
 
     }
 
